@@ -4,6 +4,8 @@ import numpy as np
 import glob
 import os
 
+import gui
+
 # values to adjust
 threshold_margin = 5
 erode_kernal_size = 2
@@ -54,31 +56,37 @@ def reveal_blob(img_bw):
 def save_picture(path, image):
     cv2.imwrite(path, image)
 
-# Entry point
-# Get a list of all the .tif files to load
-root_image_path = os.path.abspath(root_image_folder)
-image_paths = glob.glob(root_image_path + "/*.tif")
+def main():
+    # Get a list of all the .tif files to load
+    root_image_path = os.path.abspath(root_image_folder)
+    image_paths = glob.glob(root_image_path + "/*.tif")
 
-# Create output folder if it doesn't already exist
-os.makedirs(root_output_folder, exist_ok=True)
+    # Create output folder if it doesn't already exist
+    os.makedirs(root_output_folder, exist_ok=True)
 
-for image_path in image_paths:
-    # Load image as greyscale
-    img_bgr = cv2.imread(image_path)
-    img_grey = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    for image_path in image_paths:
+        # Load image as greyscale
+        img_bgr = cv2.imread(image_path)
+        img_grey = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
-    # Convert to binary image
-    img_bw = process_image(img_grey)
+        # Convert to binary image
+        img_bw = process_image(img_grey)
 
-    # draw blob onto a blank binary image
-    blob = reveal_blob(img_bw)
-    output_bw = np.zeros(img_bw.shape, np.uint8)
-    cv2.drawContours(output_bw, [blob], -1, (255,255,255), -1)
+        # draw blob onto a blank binary image
+        blob = reveal_blob(img_bw)
+        output_bw = np.zeros(img_bw.shape, np.uint8)
+        cv2.drawContours(output_bw, [blob], -1, (255,255,255), -1)
 
-    # Save blob to a file
-    save_picture(root_output_folder + "/" + os.path.basename(image_path), output_bw)
+        # Save blob to a file
+        save_picture(root_output_folder + "/" + os.path.basename(image_path), output_bw)
 
-    # Display trace overlay over original to performance can be measured
-    cv2.drawContours(img_bgr, [blob], -1, (0,255,0), 2)
-    cv2.imshow(image_path, img_bgr)
-    cv2.waitKey(0)
+        # Display trace overlay over original to performance can be measured
+        cv2.drawContours(img_bgr, [blob], -1, (0,255,0), 2)
+        cv2.imshow(image_path, img_bgr)
+        cv2.waitKey(0)
+
+
+if __name__ == "__main__":
+    gui = gui.gui()
+    gui.splash()
+    main()
