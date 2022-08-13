@@ -11,51 +11,97 @@ dilute_kernal_size = 5
 dilute_interations = 3
 
 class cookieCutter:
+    cachedBlob = None
+    cachedImagePath = ""
+    cachedImageSize = ()
+
     def readImage(self, imagePath):
-        img_bgr = cv2.imread(imagePath)
-        blue,green,red = cv2.split(img_bgr)
-        img_rgb = cv2.merge((red,green,blue))
-        return img_rgb
+        imgBgr = cv2.imread(imagePath)
+        blue,green,red = cv2.split(imgBgr)
+        imgRgb = cv2.merge((red,green,blue))
+        return imgRgb
 
-    # def max_index(self, array):
-    #     max_value = max(array)
-    #     for i in range(len(array)):
-    #         if array[i] == max_value:
-    #             return i
-    #     return 0
+    def generatePreview(self, imagePath):
+        imgRgb = self.readImage(imagePath)
 
-    # def process_image(self, image_grey):
-    #     # High pass filter
-    #     sigma = 30
-    #     image_grey = image_grey - cv2.GaussianBlur(image_grey, (0,0), sigma) + 127
+        imgGrey = cv2.cvtColor(imgRgb, cv2.COLOR_RGB2GRAY)
 
-    #     cv2.imshow(image_path, img_bgr)
-    #     cv2.waitKey(0)
+        # Convert to binary image
+        imgBw = self._processImage(imgGrey)
 
-    #     # Find global background colour by finding the most frequently used background colour
-    #     histogram = cv2.calcHist(image_grey, [0], None, [256], [0,255])
-    #     common_grey = max_index(histogram)
+        # draw blob onto a blank binary image
+        blob = self._revealBlob(imgBw)
+
+        # Cache results
+        self.cachedBlob = blob
+        self.cachedImagePath = imagePath
+        self.cachedImageSize = imgBw.shape
+
+        # # Save blob to a file
+        # outputBw = np.zeros(imgBw.shape, np.uint8)
+        # cv2.drawContours(outputBw, [blob], -1, (255,255,255), -1)
+        # save_picture(root_output_folder + "/" + os.path.basename(image_path), output_bw)
+
+        # Display trace overlay over original to performance can be measured
+        cv2.drawContours(imgRgb, [blob], -1, (0,255,0), 2)
+        return imgRgb
+
+    def generateAndSaveBinaryImage(self, inputPath, outputPath):
+        # Normally generate a binary image after preview. Use cached blob if imagePath matches cache
+        blob = None
+        imageSize = ()
+        if self.cachedImagePath == inputPath:
+            blob = self.cachedBlob
+            imageSize = self.cachedImageSize
+        else:
+            # Not cached. Need to work out from first principles
+            imgRgb = self.readImage(inputPath)
+            imgGrey = cv2.cvtColor(imgRgb, cv2.COLOR_RGB2GRAY)
+            imgBw = self._processImage(imgGrey)
+            imageSize = imgBw.shape
+            blob = self._revealBlob(imgBw)
+
+        # Overlay on BW image
+        outputBw = np.zeros(imageSize, np.uint8)
+        cv2.drawContours(outputBw, [blob], -1, (255,255,255), -1)
+        self.savePicture(outputPath, outputBw)
+
+    def _processImage(self, image_grey):
+        # High pass filter
+        sigma = 30
+        image_grey = image_grey - cv2.GaussianBlur(image_grey, (0,0), sigma) + 127
+
+        # Find global background colour by finding the most frequently used background colour
+        histogram = cv2.calcHist(image_grey, [0], None, [256], [0,255])
+        common_grey = self._maxIndex(histogram)
         
-    #     # apply threshold at the common grey
-    #     result, img_bw = cv2.threshold(image_grey, common_grey - threshold_margin, 255, cv2.THRESH_BINARY_INV)
+        # apply threshold at the common grey
+        result, img_bw = cv2.threshold(image_grey, common_grey - threshold_margin, 255, cv2.THRESH_BINARY_INV)
 
-    #     # Dilate picture slightly to rejoin any loosely disconnected blobs
-    #     dilue_kernal = np.ones((dilute_kernal_size, dilute_kernal_size), np.uint8)
-    #     erode_kernal = np.ones((erode_kernal_size, erode_kernal_size), np.uint8)
-    #     img_erosion = cv2.erode(img_bw, erode_kernal, iterations=erode_iterations)
-    #     output_img_bw = cv2.dilate(img_erosion, dilue_kernal, iterations=dilute_interations)
+        # Dilate picture slightly to rejoin any loosely disconnected blobs
+        dilue_kernal = np.ones((dilute_kernal_size, dilute_kernal_size), np.uint8)
+        erode_kernal = np.ones((erode_kernal_size, erode_kernal_size), np.uint8)
+        img_erosion = cv2.erode(img_bw, erode_kernal, iterations=erode_iterations)
+        output_img_bw = cv2.dilate(img_erosion, dilue_kernal, iterations=dilute_interations)
 
-    #     return output_img_bw
+        return output_img_bw
 
-    # def reveal_blob(self, img_bw):
-    #     contours, hierarchy = cv2.findContours(img_bw, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    def _maxIndex(self, array):
+        max_value = max(array)
+        for i in range(len(array)):
+            if array[i] == max_value:
+                return i
+        return 0
 
-    #     biggest_blob = max(contours, key = cv2.contourArea)
+    def _revealBlob(self, img_bw):
+        contours, hierarchy = cv2.findContours(img_bw, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
-    #     return biggest_blob
+        biggest_blob = max(contours, key = cv2.contourArea)
 
-    # def save_picture(self, path, image):
-    #     cv2.imwrite(path, image)
+        return biggest_blob
+
+    def savePicture(self, path, image):
+        cv2.imwrite(path, image)
 
 # def main():
 #     # Get a list of all the .tif files to load

@@ -11,10 +11,15 @@ import cookie_cutter
 
 class gui:
     window = None
+
+    #Splash screen variables
     inputImgSv = None
     outputImgSv = None
-
     splashFrame = None
+
+    inputPhotoImage = None
+    outputPhotoImage = None
+    outputImageLb = None
     imageTotalSv = None
     imageNumSb = None
     imageNumSv = None
@@ -31,12 +36,13 @@ class gui:
         self.window.geometry("900x500")
         self.window.title('Cookie Cutter')
 
-    def generateSplashForm(self):
+    def generateSplashForm(self, parentFrame):
         defaultInputPath = os.getcwd() + "/input_images"
         defaultOutputPath = os.getcwd()
-        splashFrame = ttk.Frame(self.containerFrame)
+        splashFrame = ttk.Frame(parentFrame)
         splashFrame.grid_columnconfigure(0, weight=1)
         splashFrame.grid_rowconfigure(0, weight=1)
+        splashFrame.grid(column=0, row=0)
 
         labelFrame = ttk.LabelFrame(splashFrame, text="Image Folders")
         labelFrame.grid(row=0, column=0)
@@ -64,32 +70,43 @@ class gui:
 
         return splashFrame
 
-    def generateMainFrame(self):
-        mainFrame = ttk.Frame(self.containerFrame)
-        displayFrame = ttk.LabelFrame(mainFrame, text="Input Image")
-        displayFrame.grid(row=0, column=0, padx=5, pady=5)
-        imageArray = self.cookieCutter.readImage("/Users/clinton/Desktop/mygit/cookie_cutter/input_images/A1.tif")
-        inputImage = Image.fromarray(imageArray)
-        inputPhotoImage = ImageTk.PhotoImage(image=inputImage)
-        inputImageLb = ttk.Label(displayFrame, image=inputPhotoImage)
-        inputImageLb.pack()
-        #inputImageLb.grid(row=0, column=0, padx=5, pady=5)
+    def generateMainFrame(self, parentFrame):
+        mainFrame = ttk.Frame(parentFrame)
 
-        previewFrame = ttk.LabelFrame(mainFrame, text="Preview Image")
-        previewFrame.grid(row=0, column=1, padx=5, pady=5)
+        mainFrame.grid_columnconfigure(0, weight=1)
+        mainFrame.grid_columnconfigure(1, weight=1)
+        mainFrame.grid_rowconfigure(0, weight=1)
+
+        previewFrame = ttk.LabelFrame(mainFrame, text="Preview")
+        previewFrame.grid(row=0, column=0, padx=5, pady=5)
+        pilImg = Image.new('RGB', (600, 600))
+        pilImgResized = pilImg.resize((600, 600))
+        self.outputPhotoImage = ImageTk.PhotoImage(image=pilImgResized) 
+        self.outputImageLb = ttk.Label(previewFrame, image=self.outputPhotoImage)
+        self.outputImageLb.grid(column=0, row=0, padx=5, pady=5)
         
-        settingsFrame = ttk.LabelFrame(mainFrame, text="Settings")
-        settingsFrame.grid(row=0, column=2, padx=5, pady=5)
-        imageLb = ttk.Label(settingsFrame, text="Image: ")
+        settingsFrame = ttk.Frame(mainFrame)
+        settingsFrame.grid(row=0, column=1, padx=5, pady=5)
+        settingsLabelFrame = ttk.LabelFrame(settingsFrame, text="Settings")
+        settingsLabelFrame.grid(row=0, column=0, padx=5, pady=5)
+        imageLb = ttk.Label(settingsLabelFrame, text="Image: ")
         imageLb.grid(column=0, row=0, padx=5, pady=5)
-        self.imageNumSv = tk.StringVar(settingsFrame, value="0")
-        self.imageNumSb = ttk.Spinbox(settingsFrame, textvariable=self.imageNumSv, width=3)
-        self.imageNumSv.trace('w', lambda a, b, c: self.UpdateView())
-        self.imageNumSb.grid(row=0, column=1, padx=5, pady=5)
 
-        self.imageTotalSv = tk.StringVar(settingsFrame, value=" of 0")
-        totalLb = ttk.Label(settingsFrame, textvariable=self.imageTotalSv)
+        # Image selector
+        self.imageNumSv = tk.StringVar(settingsLabelFrame, value="0")
+        self.imageNumSb = ttk.Spinbox(settingsLabelFrame, textvariable=self.imageNumSv, width=3)
+        self.imageNumSv.trace('w', lambda a, b, c: self.updateView())
+        self.imageNumSb.grid(row=0, column=1, padx=5, pady=5)
+        self.imageTotalSv = tk.StringVar(settingsLabelFrame, value=" of 0")
+        totalLb = ttk.Label(settingsLabelFrame, textvariable=self.imageTotalSv)
         totalLb.grid(column=2, row=0, padx=5, pady=5, sticky=tk.W)
+
+        # other config
+
+        # Export button
+        exportBtn = ttk.Button(settingsFrame, text="Export Image")
+        exportBtn.grid(column=0, row=1, padx=5, pady=5, sticky="E")
+        exportBtn.bind("<Button-1>", self.exportImageEvent)
 
         return mainFrame
 
@@ -127,10 +144,10 @@ class gui:
             messagebox.showerror(title="invalid file paths", message="Not images found in input folder")
             return
         
-        self.UpdateView()
+        self.updateView()
         self.mainFrame.tkraise()
 
-    def UpdateView(self):
+    def updateView(self):
         # Update view
         numOfImages = len(self.imageFiles)
         self.imageNumSb.config(from_= 0, to=numOfImages-1)
@@ -139,25 +156,38 @@ class gui:
         curImageStr = self.imageNumSb.get()
         if not curImageStr.isdigit() or int(curImageStr) < 0 or int(curImageStr) >= numOfImages:
             # Invalid state ignoring
-            print("invalid image index")
             return
-        
+
+        imgRgb = self.cookieCutter.generatePreview(self.getCurrentImagePath())
+        pilImg = Image.fromarray(imgRgb)
+        pilImgResized = pilImg.resize((600, 600))
+        self.outputPhotoImage = ImageTk.PhotoImage(image=pilImgResized)
+        self.outputImageLb.config(image=self.outputPhotoImage)
+
+
+    def exportImageEvent(self, event):
+        inputFilePath = self.getCurrentImagePath()
+        fileName = os.path.basename(inputFilePath)
+        outputFolder = self.outputImgSv.get()
+        outputPath = outputFolder + "/" + fileName
+        print(outputPath)
+
+        self.cookieCutter.generateAndSaveBinaryImage(inputFilePath, outputPath)        
+
+    def getCurrentImagePath(self):
+        curIndex = int(self.imageNumSb.get())
+        return self.imageFiles[curIndex]
 
     def launch(self):
-        # img = self.cookieCutter.readImage('/Users/clinton/Desktop/mygit/cookie_cutter/input_images/A1.tif')
-        # im = Image.fromarray(img)
-        # imgtk = ImageTk.PhotoImage(image=im) 
-        # ttk.Label(self.window, image=imgtk).pack()
-
         self.containerFrame = ttk.Frame(self.window)
         self.containerFrame.pack(side="top", fill="both", expand=True)
         self.containerFrame.grid_rowconfigure(0, weight=1)
         self.containerFrame.grid_columnconfigure(0, weight=1)
 
-        self.splashFrame = self.generateSplashForm()
+        self.splashFrame = self.generateSplashForm(self.containerFrame)   
         self.splashFrame.grid(column=0, row=0, padx=5, pady=5, sticky="nsew")
 
-        self.mainFrame = self.generateMainFrame()
+        self.mainFrame = self.generateMainFrame(self.containerFrame)
         self.mainFrame.grid(column=0, row=0, padx=5, pady=5, sticky="nsew")
 
         self.splashFrame.tkraise()
