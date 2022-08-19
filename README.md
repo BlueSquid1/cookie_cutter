@@ -1,8 +1,4 @@
 # cookie_cutter
-## Todo
-- resize preview image
-- add image processing settings
-- (maybe) show preview after threshold
 
 ## Description
 This is a basic program that can track the shape of a blob in a photo. The traced contours can then be saved to a black and white mask image.
@@ -35,5 +31,5 @@ This is a basic program that can track the shape of a blob in a photo. The trace
 
 ### Build instructions
 ```
-pyinstaller -F yourprogram.py
+pyinstaller -F main.py -n cookie_cutter
 ```
