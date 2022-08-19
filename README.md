@@ -16,17 +16,21 @@ This is a basic program that can track the shape of a blob in a photo. The trace
 ## Settings that can be modified
 1. high filter pass
     - enable - sharpens corners so they are easier to detect.
-    - size - lower reduce edge detection tolerance but if it's too low it will start to miss the edges of a cell.
+    - sigma - higher increases edge constrast however significantly slows down program.
 1. brightness threshold 
-    - amount - lower will include more objects but could introduce false positives.
+    - offset - lower will include more objects but could introduce false positives.
 1. errosion 
     - enable - removes pixels at threshold border. Useful to detach false positives/noise near a cell's edge.
     - kernal size - how many pixels to delete for each errosion iteration. Large values will errode more but will also reduce resolution of image.
     - iterations - how many times to perform the errosion operation. Large values will errode more but will take longer.
-1. dilution 
+1. dilation 
     - enable - add pixels at threshold border. Useful to close small gaps between contours.
     - kernal size - how many pixels to add for each errosion iteration. Large values will add more but will also reduce resolution of image.
     - iterations - how many times to perform the dilution operation. Large values will dilute more but will take longer.
+
+## Download
+go here:
+https://github.com/BlueSquid1/cookie_cutter/releases/latest
 
 ## Building from source
 
