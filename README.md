@@ -1,6 +1,6 @@
 # cookie_cutter
 
-[cookie_cutter_mac.pdf](https://github.com/BlueSquid1/cookie_cutter/files/9381305/cookie_cutter_mac.pdf)
+![cookie_cutter_mac](https://user-images.githubusercontent.com/9015401/185598293-dbd722a6-8b66-4435-8b73-7168bff5666f.png)
 
 ![cookie_cutter_windows](https://user-images.githubusercontent.com/9015401/185598122-a42ee5c6-8c8d-488e-ba59-3f51636259eb.PNG)
 
